@@ -1,1 +1,2 @@
-print("Hello World von Rojo") 
+task.wait(2)
+print("[Server] MiniSzene Server-Skript erfolgreich geladen!") 
