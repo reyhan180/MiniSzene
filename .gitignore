@@ -1,1 +1,6 @@
-"*.lock" 
+*.rbxl
+*.rbxlx
+.rojo/
+.vscode/
+node_modules/
+"*.lock"
