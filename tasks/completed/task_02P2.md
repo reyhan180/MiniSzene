@@ -78,3 +78,6 @@ Aufbau eines serverseitigen Runden-Systems als **State Machine**. Das Spiel durc
 
 ### Abschluss (02.11.2026)
 - Place in Studio vom User gespeichert. Task nach `tasks/completed/task_02P2.md` verschoben, Commit und Push nach ausdrücklicher Freigabe.
+
+### Nachtrag 2-Spieler-Test (02.11.2026)
+- Vom User manuell in Studio durchgeführt (Local Server, 2 Spieler): Runden-System, Coins-Verteilung und UI-Anzeigen laufen im Multiplayer ohne Probleme.

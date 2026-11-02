@@ -65,8 +65,11 @@ Aufbau der grundlegenden System-Architektur für Praxisprojekt 02. Dazu gehören
 ### Punkt 4 – Integration & Doku (02.11.2026)
 - Playtest (1 Spieler, echte Mausklicks/Taste E): Kauf, Ablehnung bei zu wenig Coins, manipulierte Anfragen (unbekanntes Item, Zahl, Tabelle), Spam-Schutz, Speichern/Laden nach Neustart (15 Coins + 3 Items wiederhergestellt), Tresen-Prompt, Schließen-Button. Alles bestanden, keine Skriptfehler. Details in der Doku, Abschnitt 7.
 - `docs/architecture/systems_overview.md` erstellt.
-- 2-Spieler-Test auf lokalem Server: konnte über das MCP nicht gestartet werden und wurde vom Agenten nicht durchgeführt. Task auf Wunsch des Users abgeschlossen.
+- 2-Spieler-Test auf lokalem Server: konnte über das MCP nicht gestartet werden und wurde vom Agenten nicht durchgeführt. Task auf Wunsch des Users abgeschlossen. 
 - Hinweis: Der Testspieler `devirl_2` hat jetzt gespeicherte Daten (15 Coins, 3 Items) im DataStore `PlayerData_v1`.
 
 ### Abschluss (02.11.2026)
 - Place in Studio vom User gespeichert. Task nach `tasks/completed/task_01P2.md` verschoben, Commit und Push nach ausdrücklicher Freigabe.
+
+### Nachtrag 2-Spieler-Test (02.11.2026)
+- Vom User manuell in Studio durchgeführt (Local Server, 2 Spieler): Runden-System, Coins-Verteilung und UI-Anzeigen laufen im Multiplayer ohne Probleme.

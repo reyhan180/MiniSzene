@@ -106,3 +106,5 @@ Keine Skriptfehler in der Konsole.
 - Spieler tritt während `Playing` bei → Zuschauer, nächste Runde Teilnehmer
 - Zwei Teilnehmer: Gewinner 50 / anderer 10 Coins, Gleichstand
 - Der Schutz vor ungültigen Übergängen ist im Code vorhanden, wurde im normalen Ablauf aber nie ausgelöst.
+
+**Nachtrag 02.11.2026:** 2-Spieler-Test auf lokalem Server vom User manuell durchgeführt. Runden-System, Coins-Verteilung und UI-Anzeigen funktionieren im Multiplayer.
