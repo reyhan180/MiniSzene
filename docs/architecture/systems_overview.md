@@ -103,3 +103,6 @@ Wird von `ShopUI.client.luau` per Code erzeugt (`ResetOnSpawn = false`).
 Keine Fehler aus den neuen Skripten in der Konsole. (`rbxassetid://203785492 …` ist bekannt und kommt nicht aus diesen Skripten, siehe Task 04.)
 
 **Offen:** Test mit 2 Spielern auf einem lokalen Server (*Test → Clients and Servers → Local Server, 2 Players*). Der kann über das Studio-MCP nicht gestartet werden und muss manuell durchgeführt werden. Prüfen: Jeder Spieler sieht nur seine eigenen Coins/Items im Shop, und die Käufe von Spieler 1 ändern nichts bei Spieler 2.
+
+## 8. Weitere Systeme
+- Runden-System (Game Loop & State Machine): `docs/architecture/round_system.md`. Vergibt Coins am Rundenende über `PlayerDataService.addCoins`.
