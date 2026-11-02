@@ -1,9 +1,9 @@
 -- Shop- und Inventar-UI (Client).
 -- Baut die ScreenGui "ShopGui" per Code auf:
---   * Button "Shop" unten links zum Öffnen/Schließen
---   * Shop-Fenster mit allen Items aus ShopConfig und je einem "Kaufen"-Button
---   * Inventar-Anzeige rechts (liest player.Inventory, wird vom Server gefüllt)
--- Der Shop öffnet sich außerdem über den Einkaufen-Prompt am Tresen.
+--   * Seitenleiste rechts: "Shop"-Button + einklappbares Inventar (liest player.Inventory)
+--   * Shop-Fenster mit scrollbarer Item-Liste aus ShopConfig und je einem "Kaufen"-Button
+-- Größen/Positionen kommen aus UILayout (responsive, Smartphone quer bis Desktop).
+-- Der Shop öffnet sich außerdem über den Einkaufen-Prompt am Tresen und bleibt während der Runde nutzbar.
 -- Kauf: BuyItem:FireServer(itemId). Die Antwort des Servers wird als Statuszeile angezeigt.
 
 local CollectionService = game:GetService("CollectionService")
@@ -11,68 +11,18 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
+local UITheme = require(ReplicatedStorage:WaitForChild("UITheme"))
+local UILayout = require(ReplicatedStorage:WaitForChild("UILayout"))
 local buyItem = ReplicatedStorage:WaitForChild(ShopConfig.BUY_ITEM_EVENT) :: RemoteEvent
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+local COLORS = UITheme.COLORS
+local FONTS = UITheme.FONTS
+local TEXT_SIZE = UITheme.TEXT_SIZE
 local PROMPT_TAG = "GasStationPrompt"
 local STATUS_SECONDS = 3
-
-local COLOR_PANEL = Color3.fromRGB(30, 34, 42)
-local COLOR_ROW = Color3.fromRGB(45, 50, 60)
-local COLOR_TEXT = Color3.fromRGB(240, 240, 240)
-local COLOR_MUTED = Color3.fromRGB(160, 165, 175)
-local COLOR_BUY = Color3.fromRGB(60, 170, 90)
-local COLOR_DISABLED = Color3.fromRGB(90, 95, 105)
-local COLOR_SUCCESS = Color3.fromRGB(90, 220, 120)
-local COLOR_ERROR = Color3.fromRGB(235, 90, 80)
-
--- ===== Hilfsfunktionen =====
-
-local function addCorner(parent: Instance, radius: number)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, radius)
-	corner.Parent = parent
-end
-
-local function addPadding(parent: Instance, pixels: number)
-	local padding = Instance.new("UIPadding")
-	padding.PaddingTop = UDim.new(0, pixels)
-	padding.PaddingBottom = UDim.new(0, pixels)
-	padding.PaddingLeft = UDim.new(0, pixels)
-	padding.PaddingRight = UDim.new(0, pixels)
-	padding.Parent = parent
-end
-
-local function makeLabel(name: string, text: string, size: UDim2, parent: Instance): TextLabel
-	local label = Instance.new("TextLabel")
-	label.Name = name
-	label.Text = text
-	label.Size = size
-	label.BackgroundTransparency = 1
-	label.TextColor3 = COLOR_TEXT
-	label.Font = Enum.Font.GothamMedium
-	label.TextSize = 16
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Parent = parent
-	return label
-end
-
-local function makeButton(name: string, text: string, size: UDim2, color: Color3, parent: Instance): TextButton
-	local button = Instance.new("TextButton")
-	button.Name = name
-	button.Text = text
-	button.Size = size
-	button.BackgroundColor3 = color
-	button.TextColor3 = COLOR_TEXT
-	button.Font = Enum.Font.GothamBold
-	button.TextSize = 16
-	button.AutoButtonColor = true
-	addCorner(button, 6)
-	button.Parent = parent
-	return button
-end
 
 local function getCoins(): number
 	local leaderstats = player:FindFirstChild("leaderstats")
@@ -96,51 +46,105 @@ screenGui.Name = "ShopGui"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Toggle-Button
-local toggleButton = makeButton("ShopButton", "Shop", UDim2.fromOffset(110, 44), COLOR_BUY, screenGui)
-toggleButton.AnchorPoint = Vector2.new(0, 1)
-toggleButton.Position = UDim2.new(0, 16, 1, -16)
+-- --- Seitenleiste: Shop-Button + Inventar ---
+local sidePanel = Instance.new("Frame")
+sidePanel.Name = "SidePanel"
+sidePanel.BackgroundTransparency = 1
+sidePanel.AutomaticSize = Enum.AutomaticSize.Y
+sidePanel.Parent = screenGui
 
--- Shop-Fenster
-local shopFrame = Instance.new("Frame")
-shopFrame.Name = "ShopFrame"
-shopFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-shopFrame.Position = UDim2.fromScale(0.5, 0.5)
-shopFrame.Size = UDim2.fromOffset(360, 110 + #sortedItemIds * 56)
-shopFrame.BackgroundColor3 = COLOR_PANEL
+local sideLayout = Instance.new("UIListLayout")
+sideLayout.Padding = UDim.new(0, UILayout.SIDE_GAP)
+sideLayout.SortOrder = Enum.SortOrder.LayoutOrder
+sideLayout.Parent = sidePanel
+
+local shopButton = UITheme.makeButton("ShopButton", "Shop", COLORS.Buy, sidePanel)
+shopButton.LayoutOrder = 1
+shopButton.Size = UDim2.new(1, 0, 0, UITheme.TOUCH_TARGET)
+shopButton.TextSize = TEXT_SIZE.Heading
+
+local inventoryPanel = UITheme.makePanel("InventoryPanel", sidePanel)
+inventoryPanel.LayoutOrder = 2
+inventoryPanel.Size = UDim2.fromScale(1, 0)
+inventoryPanel.AutomaticSize = Enum.AutomaticSize.Y
+
+local inventoryPadding = Instance.new("UIPadding")
+inventoryPadding.PaddingLeft = UDim.new(0, 10)
+inventoryPadding.PaddingRight = UDim.new(0, 10)
+inventoryPadding.PaddingBottom = UDim.new(0, 6)
+inventoryPadding.Parent = inventoryPanel
+
+local inventoryLayout = Instance.new("UIListLayout")
+inventoryLayout.SortOrder = Enum.SortOrder.LayoutOrder
+inventoryLayout.Parent = inventoryPanel
+
+local inventoryHeader = Instance.new("TextButton")
+inventoryHeader.Name = "Header"
+inventoryHeader.LayoutOrder = 0
+inventoryHeader.Size = UDim2.new(1, 0, 0, UILayout.INVENTORY_HEADER_HEIGHT)
+inventoryHeader.BackgroundTransparency = 1
+inventoryHeader.Font = FONTS.Bold
+inventoryHeader.TextSize = TEXT_SIZE.Heading
+inventoryHeader.TextColor3 = COLORS.Text
+inventoryHeader.TextXAlignment = Enum.TextXAlignment.Left
+inventoryHeader.Text = "Inventar"
+inventoryHeader.Parent = inventoryPanel
+
+local emptyLabel = UITheme.makeLabel("EmptyLabel", "leer", TEXT_SIZE.Small, inventoryPanel)
+emptyLabel.LayoutOrder = 1
+emptyLabel.Size = UDim2.new(1, 0, 0, UILayout.INVENTORY_ROW_HEIGHT)
+emptyLabel.TextColor3 = COLORS.Muted
+
+local inventoryRows: { [string]: TextLabel } = {}
+for index, itemId in sortedItemIds do
+	local row = UITheme.makeLabel(itemId, "", TEXT_SIZE.Small, inventoryPanel)
+	row.LayoutOrder = index + 1
+	row.Size = UDim2.new(1, 0, 0, UILayout.INVENTORY_ROW_HEIGHT)
+	row.Visible = false
+	inventoryRows[itemId] = row
+end
+
+-- --- Shop-Fenster ---
+local shopFrame = UITheme.makePanel("ShopFrame", screenGui)
+shopFrame.BackgroundTransparency = 0
 shopFrame.Visible = false
-addCorner(shopFrame, 10)
-addPadding(shopFrame, 14)
-shopFrame.Parent = screenGui
+UITheme.addPadding(shopFrame, UILayout.SHOP_PADDING)
 
-local title = makeLabel("Title", "NORDSTERN Shop", UDim2.new(1, -40, 0, 28), shopFrame)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 22
+local title = UITheme.makeLabel("Title", "NORDSTERN Shop", TEXT_SIZE.Title, shopFrame)
+title.Font = FONTS.Bold
+title.Size = UDim2.new(1, -(UITheme.TOUCH_TARGET + 8), 0, 28)
 
-local closeButton = makeButton("CloseButton", "X", UDim2.fromOffset(28, 28), COLOR_ROW, shopFrame)
+local closeButton = UITheme.makeButton("CloseButton", "X", COLORS.Row, shopFrame)
 closeButton.AnchorPoint = Vector2.new(1, 0)
 closeButton.Position = UDim2.fromScale(1, 0)
+closeButton.Size = UDim2.fromOffset(UITheme.TOUCH_TARGET, UITheme.TOUCH_TARGET)
 
-local coinsLabel = makeLabel("CoinsLabel", "Coins: 0", UDim2.new(1, 0, 0, 20), shopFrame)
+local coinsLabel = UITheme.makeLabel("CoinsLabel", "Coins: 0", TEXT_SIZE.Body, shopFrame)
 coinsLabel.Position = UDim2.fromOffset(0, 32)
-coinsLabel.TextColor3 = COLOR_MUTED
+coinsLabel.Size = UDim2.new(1, -(UITheme.TOUCH_TARGET + 8), 0, 20)
+coinsLabel.TextColor3 = COLORS.Muted
 
-local itemList = Instance.new("Frame")
+local itemList = Instance.new("ScrollingFrame")
 itemList.Name = "ItemList"
 itemList.BackgroundTransparency = 1
-itemList.Position = UDim2.fromOffset(0, 60)
-itemList.Size = UDim2.new(1, 0, 0, #sortedItemIds * 56)
+itemList.BorderSizePixel = 0
+itemList.Position = UDim2.fromOffset(0, UILayout.SHOP_HEADER_HEIGHT)
+itemList.CanvasSize = UDim2.new()
+itemList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+itemList.ScrollingDirection = Enum.ScrollingDirection.Y
+itemList.ScrollBarThickness = 6
+itemList.ScrollBarImageColor3 = COLORS.Muted
 itemList.Parent = shopFrame
 
 local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 6)
+listLayout.Padding = UDim.new(0, UILayout.ROW_GAP)
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Parent = itemList
 
-local statusLabel = makeLabel("StatusLabel", "", UDim2.new(1, 0, 0, 20), shopFrame)
+local statusLabel = UITheme.makeLabel("StatusLabel", "", TEXT_SIZE.Small, shopFrame)
 statusLabel.AnchorPoint = Vector2.new(0, 1)
 statusLabel.Position = UDim2.fromScale(0, 1)
-statusLabel.TextSize = 14
+statusLabel.Size = UDim2.new(1, 0, 0, UILayout.SHOP_STATUS_HEIGHT)
 
 local buyButtons: { [string]: TextButton } = {}
 
@@ -150,65 +154,56 @@ for index, itemId in sortedItemIds do
 	local row = Instance.new("Frame")
 	row.Name = itemId
 	row.LayoutOrder = index
-	row.Size = UDim2.new(1, 0, 0, 50)
-	row.BackgroundColor3 = COLOR_ROW
-	addCorner(row, 8)
-	addPadding(row, 8)
+	row.Size = UDim2.new(1, -10, 0, UILayout.ROW_HEIGHT) -- Platz für die Scrollbar
+	row.BackgroundColor3 = COLORS.Row
+	row.BorderSizePixel = 0
+	UITheme.addCorner(row, UITheme.CORNER.Medium)
+	UITheme.addPadding(row, (UILayout.ROW_HEIGHT - UILayout.BUY_BUTTON_HEIGHT) / 2)
 	row.Parent = itemList
 
-	makeLabel("NameLabel", item.displayName, UDim2.new(1, -110, 0.5, 0), row)
-	local priceLabel = makeLabel("PriceLabel", `{item.price} Coins`, UDim2.new(1, -110, 0.5, 0), row)
+	local nameLabel = UITheme.makeLabel("NameLabel", item.displayName, TEXT_SIZE.Body, row)
+	nameLabel.Size = UDim2.new(1, -(UILayout.BUY_BUTTON_WIDTH + 8), 0.5, 0)
+	local priceLabel = UITheme.makeLabel("PriceLabel", `{item.price} Coins`, TEXT_SIZE.Small, row)
 	priceLabel.Position = UDim2.fromScale(0, 0.5)
-	priceLabel.TextColor3 = COLOR_MUTED
-	priceLabel.TextSize = 14
+	priceLabel.Size = UDim2.new(1, -(UILayout.BUY_BUTTON_WIDTH + 8), 0.5, 0)
+	priceLabel.TextColor3 = COLORS.Muted
 
-	local buyButton = makeButton("BuyButton", "Kaufen", UDim2.new(0, 96, 1, 0), COLOR_BUY, row)
-	buyButton.AnchorPoint = Vector2.new(1, 0)
-	buyButton.Position = UDim2.fromScale(1, 0)
+	local buyButton = UITheme.makeButton("BuyButton", "Kaufen", COLORS.Buy, row)
+	buyButton.AnchorPoint = Vector2.new(1, 0.5)
+	buyButton.Position = UDim2.fromScale(1, 0.5)
+	buyButton.Size = UDim2.fromOffset(UILayout.BUY_BUTTON_WIDTH, UILayout.BUY_BUTTON_HEIGHT)
 	buyButton.Activated:Connect(function()
 		buyItem:FireServer(itemId)
 	end)
 	buyButtons[itemId] = buyButton
 end
 
--- Inventar-Anzeige
-local inventoryFrame = Instance.new("Frame")
-inventoryFrame.Name = "InventoryFrame"
-inventoryFrame.AnchorPoint = Vector2.new(1, 0.5)
-inventoryFrame.Position = UDim2.new(1, -16, 0.5, 0)
-inventoryFrame.Size = UDim2.fromOffset(200, 0)
-inventoryFrame.AutomaticSize = Enum.AutomaticSize.Y
-inventoryFrame.BackgroundColor3 = COLOR_PANEL
-inventoryFrame.BackgroundTransparency = 0.15
-addCorner(inventoryFrame, 10)
-addPadding(inventoryFrame, 10)
-inventoryFrame.Parent = screenGui
-
-local inventoryLayout = Instance.new("UIListLayout")
-inventoryLayout.Padding = UDim.new(0, 4)
-inventoryLayout.SortOrder = Enum.SortOrder.LayoutOrder
-inventoryLayout.Parent = inventoryFrame
-
-local inventoryTitle = makeLabel("Title", "Inventar", UDim2.new(1, 0, 0, 24), inventoryFrame)
-inventoryTitle.Font = Enum.Font.GothamBold
-inventoryTitle.TextSize = 18
-inventoryTitle.LayoutOrder = 0
-
-local emptyLabel = makeLabel("EmptyLabel", "leer", UDim2.new(1, 0, 0, 20), inventoryFrame)
-emptyLabel.TextColor3 = COLOR_MUTED
-emptyLabel.TextSize = 14
-emptyLabel.LayoutOrder = 1
-
-local inventoryRows: { [string]: TextLabel } = {}
-for index, itemId in sortedItemIds do
-	local row = makeLabel(itemId, "", UDim2.new(1, 0, 0, 20), inventoryFrame)
-	row.TextSize = 15
-	row.LayoutOrder = index + 1
-	row.Visible = false
-	inventoryRows[itemId] = row
-end
-
 screenGui.Parent = playerGui
+
+-- ===== Layout =====
+
+local inventoryCollapsed = false
+local lastCompact: boolean? = nil
+
+local refreshInventory: () -> ()
+
+local function applyLayout()
+	local layout = UILayout.compute(screenGui.AbsoluteSize, #sortedItemIds)
+
+	sidePanel.Position = UDim2.fromOffset(layout.side.position.X, layout.side.position.Y)
+	sidePanel.Size = UDim2.fromOffset(layout.side.size.X, 0)
+
+	shopFrame.Position = UDim2.fromOffset(layout.shop.position.X, layout.shop.position.Y)
+	shopFrame.Size = UDim2.fromOffset(layout.shop.size.X, layout.shop.size.Y)
+	itemList.Size = UDim2.new(1, 0, 0, layout.shopListHeight)
+
+	-- Beim Wechsel zwischen kompakt/normal den Standard für das Inventar übernehmen
+	if layout.compact ~= lastCompact then
+		lastCompact = layout.compact
+		inventoryCollapsed = layout.inventoryCollapsedByDefault
+		refreshInventory()
+	end
+end
 
 -- ===== Logik =====
 
@@ -217,21 +212,24 @@ local function refreshShop()
 	coinsLabel.Text = `Coins: {coins}`
 	for itemId, button in buyButtons do
 		local affordable = coins >= ShopConfig.ITEMS[itemId].price
-		button.BackgroundColor3 = if affordable then COLOR_BUY else COLOR_DISABLED
+		button.BackgroundColor3 = if affordable then COLORS.Buy else COLORS.Disabled
 	end
 end
 
-local function refreshInventory()
+function refreshInventory()
 	local inventory = player:FindFirstChild("Inventory")
-	local hasItems = false
+	local total = 0
 	for itemId, row in inventoryRows do
 		local value = inventory and inventory:FindFirstChild(itemId)
 		local count = if value then (value :: IntValue).Value else 0
-		row.Visible = count > 0
+		total += count
+		row.Visible = count > 0 and not inventoryCollapsed
 		row.Text = `{ShopConfig.ITEMS[itemId].displayName}  x{count}`
-		hasItems = hasItems or count > 0
 	end
-	emptyLabel.Visible = not hasItems
+	emptyLabel.Visible = total == 0 and not inventoryCollapsed
+	-- "+"/"–" statt Pfeil-Symbolen: die Gotham-Schrift hat keine Pfeil-Glyphen
+	local marker = if inventoryCollapsed then "+" else "–"
+	inventoryHeader.Text = `{marker} Inventar ({total})`
 end
 
 local function setShopOpen(open: boolean)
@@ -241,11 +239,15 @@ local function setShopOpen(open: boolean)
 	end
 end
 
-toggleButton.Activated:Connect(function()
+shopButton.Activated:Connect(function()
 	setShopOpen(not shopFrame.Visible)
 end)
 closeButton.Activated:Connect(function()
 	setShopOpen(false)
+end)
+inventoryHeader.Activated:Connect(function()
+	inventoryCollapsed = not inventoryCollapsed
+	refreshInventory()
 end)
 
 local statusToken = 0
@@ -253,7 +255,7 @@ buyItem.OnClientEvent:Connect(function(success: boolean, _itemId: string?, messa
 	statusToken += 1
 	local token = statusToken
 	statusLabel.Text = message
-	statusLabel.TextColor3 = if success then COLOR_SUCCESS else COLOR_ERROR
+	statusLabel.TextColor3 = if success then COLORS.Success else COLORS.Error
 	refreshShop()
 	task.delay(STATUS_SECONDS, function()
 		if token == statusToken then
@@ -261,6 +263,10 @@ buyItem.OnClientEvent:Connect(function(success: boolean, _itemId: string?, messa
 		end
 	end)
 end)
+
+screenGui:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyLayout)
+applyLayout()
+refreshInventory()
 
 -- Coins beobachten (leaderstats kommt erst nach dem Laden der Daten)
 task.spawn(function()

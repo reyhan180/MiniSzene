@@ -18,9 +18,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local RoundConfig = require(ReplicatedStorage:WaitForChild("RoundConfig"))
+local Log = require(ReplicatedStorage:WaitForChild("Log"))
 local PlayerDataService = require(script.Parent:WaitForChild("PlayerDataService"))
 local MapCleanup = require(script.Parent:WaitForChild("MapCleanup"))
 local RoundAnalytics = require(script.Parent:WaitForChild("RoundAnalytics"))
+
+local log = Log.new("Runde")
 
 local STATES = RoundConfig.STATES
 local PHASES = RoundConfig.PHASES
@@ -41,11 +44,11 @@ local function setState(newState: string): boolean
 	if currentState ~= nil then
 		local allowed = RoundConfig.TRANSITIONS[currentState]
 		if not (allowed and allowed[newState]) then
-			warn(`[Runde] Ungültiger Übergang {currentState} -> {newState} verhindert`)
+			log.warn(`Ungültiger Übergang {currentState} -> {newState} verhindert`)
 			return false
 		end
 	end
-	print(`[Runde] {currentState or "Start"} -> {newState}`)
+	log.info(`{currentState or "Start"} -> {newState}`)
 	currentState = newState
 	ReplicatedStorage:SetAttribute(RoundConfig.ATTR_STATE, newState)
 	return true
@@ -135,12 +138,14 @@ local function getSpawnPoints(path: { string }): { BasePart }
 		return a.Name < b.Name
 	end)
 	if #points == 0 then
-		warn(`[Runde] Keine Startpunkte unter Workspace.{table.concat(path, ".")}`)
+		log.warn(`Keine Startpunkte unter Workspace.{table.concat(path, ".")}`)
 	end
 	return points
 end
 
 -- Verteilt die Spieler reihum auf die Startpunkte.
+-- Gibt es mehr Spieler als Punkte, wird jede weitere Runde um OVERFLOW_OFFSET seitlich versetzt.
+local OVERFLOW_OFFSET = 3
 local function teleportPlayers(players: { Player }, points: { BasePart })
 	if #points == 0 then
 		return
@@ -149,7 +154,9 @@ local function teleportPlayers(players: { Player }, points: { BasePart })
 		local character = player.Character
 		if character and isAlive(player) then
 			local point = points[(index - 1) % #points + 1]
-			character:PivotTo(point.CFrame + Vector3.new(0, TELEPORT_HEIGHT, 0))
+			local wrap = (index - 1) // #points
+			local offset = point.CFrame.RightVector * (wrap * OVERFLOW_OFFSET)
+			character:PivotTo(point.CFrame + Vector3.new(0, TELEPORT_HEIGHT, 0) + offset)
 		end
 	end
 end
@@ -186,7 +193,7 @@ local function removeParticipant(player: Player, reason: string)
 	if player.Parent then
 		player:SetAttribute(RoundConfig.ATTR_IN_ROUND, false)
 	end
-	print(`[Runde] {player.Name} scheidet aus ({reason})`)
+	log.info(`{player.Name} scheidet aus ({reason})`)
 	if currentState == STATES.Playing then
 		RoundAnalytics.playerEliminated(player, reason)
 	end
@@ -214,7 +221,7 @@ local function bindPrompt(prompt: Instance)
 		end
 		local points = (player:GetAttribute(RoundConfig.ATTR_POINTS) or 0) + RoundConfig.POINTS_PER_INTERACTION
 		player:SetAttribute(RoundConfig.ATTR_POINTS, points)
-		print(`[Runde] {player.Name}: +{RoundConfig.POINTS_PER_INTERACTION} Punkt ({prompt:GetAttribute("Interaction")}), gesamt {points}`)
+		log.debug(`{player.Name}: +{RoundConfig.POINTS_PER_INTERACTION} Punkt ({prompt:GetAttribute("Interaction")}), gesamt {points}`)
 	end)
 end
 
@@ -279,7 +286,7 @@ local function runCountdown(): (boolean, number)
 	end
 
 	local list = getParticipantList()
-	print(`[Runde] {#list} Teilnehmer`)
+	log.debug(`{#list} Teilnehmer`)
 	teleportPlayers(list, getSpawnPoints(RoundConfig.ARENA_SPAWNS_PATH))
 	for _, player in list do
 		setFrozen(player, true)
@@ -313,6 +320,11 @@ local function runPlaying(): string
 	return if completed then "timer" else "no_survivors"
 end
 
+-- "1 Punkt" / "2 Punkte"
+local function formatPoints(points: number): string
+	return if points == 1 then "1 Punkt" else `{points} Punkte`
+end
+
 -- Gewinner: meiste Punkte unter den Überlebenden. Hat niemand gepunktet, gewinnen alle Überlebenden.
 local function determineWinners(survivors: { Player }): ({ Player }, number)
 	local bestPoints = 0
@@ -343,7 +355,7 @@ local function runRoundEnd(endReason: string)
 		coinsAwarded += reward
 		PlayerDataService.addCoins(player, reward)
 		player:SetAttribute(RoundConfig.ATTR_REWARD, reward)
-		print(`[Runde] {player.Name}: {player:GetAttribute(RoundConfig.ATTR_POINTS) or 0} Punkte, +{reward} Coins`)
+		log.info(`{player.Name}: {formatPoints(player:GetAttribute(RoundConfig.ATTR_POINTS) or 0)}, +{reward} Coins`)
 	end
 
 	local message
@@ -354,12 +366,12 @@ local function runRoundEnd(endReason: string)
 		for _, player in winners do
 			table.insert(names, player.DisplayName)
 		end
-		local reason = if bestPoints > 0 then `{bestPoints} Punkte` else "überlebt"
+		local reason = if bestPoints > 0 then formatPoints(bestPoints) else "überlebt"
 		message = `Gewinner: {table.concat(names, ", ")} ({reason})`
 	end
 	ReplicatedStorage:SetAttribute(RoundConfig.ATTR_MESSAGE, message)
 	setState(STATES.RoundEnd)
-	print(`[Runde] {message}`)
+	log.info(message)
 	local rewardInfo = if #survivors > 0
 		then `Gewinner +{RoundConfig.WIN_REWARD} Coins · Teilnehmer +{RoundConfig.PARTICIPATION_REWARD} Coins`
 		else "Keine Belohnung"
@@ -423,7 +435,7 @@ while true do
 				player:SetAttribute(RoundConfig.ATTR_IN_ROUND, false)
 			end
 			participants = {}
-			print("[Runde] Countdown abgebrochen, zu wenige Spieler")
+			log.info("Countdown abgebrochen, zu wenige Spieler")
 			RoundAnalytics.roundAborted("too_few_players", countdownParticipants)
 			announce(PHASES.Lobby, "Runde abgebrochen", "Zu wenige Spieler – warte auf neue Spieler", 3)
 			MapCleanup.cleanup()

@@ -1,21 +1,19 @@
 -- Statusanzeige des Runden-Systems (Client).
 -- Liest nur die vom Server gesetzten Attribute (siehe RoundConfig) und zeigt sie oben in der Mitte an.
+-- Schriftgrößen passen sich über UILayout an kleine Bildschirme an.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RoundConfig = require(ReplicatedStorage:WaitForChild("RoundConfig"))
+local UITheme = require(ReplicatedStorage:WaitForChild("UITheme"))
+local UILayout = require(ReplicatedStorage:WaitForChild("UILayout"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local STATES = RoundConfig.STATES
-
-local COLOR_PANEL = Color3.fromRGB(30, 34, 42)
-local COLOR_TEXT = Color3.fromRGB(240, 240, 240)
-local COLOR_MUTED = Color3.fromRGB(170, 175, 185)
-local COLOR_ACCENT = Color3.fromRGB(255, 200, 70)
-local COLOR_SUCCESS = Color3.fromRGB(90, 220, 120)
+local COLORS = UITheme.COLORS
 
 -- ===== Aufbau =====
 
@@ -24,25 +22,17 @@ screenGui.Name = "RoundGui"
 screenGui.ResetOnSpawn = false
 screenGui.DisplayOrder = -1 -- unter der ShopGui
 
-local frame = Instance.new("Frame")
-frame.Name = "StatusFrame"
+local frame = UITheme.makePanel("StatusFrame", screenGui)
 frame.AnchorPoint = Vector2.new(0.5, 0)
 frame.Position = UDim2.new(0.5, 0, 0, 8)
 frame.Size = UDim2.fromOffset(0, 0)
 frame.AutomaticSize = Enum.AutomaticSize.XY
-frame.BackgroundColor3 = COLOR_PANEL
-frame.BackgroundTransparency = 0.15
-frame.Parent = screenGui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = frame
 
 local padding = Instance.new("UIPadding")
-padding.PaddingTop = UDim.new(0, 8)
-padding.PaddingBottom = UDim.new(0, 8)
-padding.PaddingLeft = UDim.new(0, 18)
-padding.PaddingRight = UDim.new(0, 18)
+padding.PaddingTop = UDim.new(0, 6)
+padding.PaddingBottom = UDim.new(0, 6)
+padding.PaddingLeft = UDim.new(0, 16)
+padding.PaddingRight = UDim.new(0, 16)
 padding.Parent = frame
 
 local layout = Instance.new("UIListLayout")
@@ -51,25 +41,29 @@ layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Padding = UDim.new(0, 2)
 layout.Parent = frame
 
-local function makeLabel(name: string, order: number, textSize: number, font: Enum.Font, color: Color3): TextLabel
-	local label = Instance.new("TextLabel")
-	label.Name = name
+local function makeLabel(name: string, order: number, font: Enum.Font): TextLabel
+	local label = UITheme.makeLabel(name, "", UITheme.TEXT_SIZE.Body, frame)
 	label.LayoutOrder = order
-	label.BackgroundTransparency = 1
 	label.AutomaticSize = Enum.AutomaticSize.XY
 	label.Size = UDim2.fromOffset(0, 0)
 	label.Font = font
-	label.TextSize = textSize
-	label.TextColor3 = color
-	label.Text = ""
-	label.Parent = frame
+	label.TextXAlignment = Enum.TextXAlignment.Center
+	label.TextTruncate = Enum.TextTruncate.None
 	return label
 end
 
-local titleLabel = makeLabel("TitleLabel", 1, 22, Enum.Font.GothamBold, COLOR_TEXT)
-local detailLabel = makeLabel("DetailLabel", 2, 16, Enum.Font.GothamMedium, COLOR_MUTED)
+local titleLabel = makeLabel("TitleLabel", 1, UITheme.FONTS.Bold)
+local detailLabel = makeLabel("DetailLabel", 2, UITheme.FONTS.Regular)
 
 screenGui.Parent = playerGui
+
+local function applyLayout()
+	local computed = UILayout.compute(screenGui.AbsoluteSize, 1)
+	titleLabel.TextSize = computed.statusTitleSize
+	detailLabel.TextSize = computed.statusDetailSize
+end
+screenGui:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyLayout)
+applyLayout()
 
 -- ===== Anzeige =====
 
@@ -83,8 +77,8 @@ local function refresh()
 	local inRound = player:GetAttribute(RoundConfig.ATTR_IN_ROUND) == true
 	local points = player:GetAttribute(RoundConfig.ATTR_POINTS) or 0
 
-	titleLabel.TextColor3 = COLOR_TEXT
-	detailLabel.TextColor3 = COLOR_MUTED
+	titleLabel.TextColor3 = COLORS.Text
+	detailLabel.TextColor3 = COLORS.Muted
 
 	if state == STATES.Waiting then
 		local needed = ReplicatedStorage:GetAttribute(RoundConfig.ATTR_MIN_PLAYERS) or RoundConfig.MIN_PLAYERS
@@ -94,20 +88,20 @@ local function refresh()
 		titleLabel.Text = `Nächste Runde in {formatTime(timeLeft)}`
 		detailLabel.Text = "Lobby – Tanken & Einkaufen bringt in der Runde Punkte"
 	elseif state == STATES.Countdown then
-		titleLabel.TextColor3 = COLOR_ACCENT
+		titleLabel.TextColor3 = COLORS.Accent
 		titleLabel.Text = `Runde startet in {timeLeft}`
 		detailLabel.Text = if inRound then "Mach dich bereit!" else "Du bist in der nächsten Runde dabei"
 	elseif state == STATES.Playing then
 		titleLabel.Text = `Runde läuft – {formatTime(timeLeft)}`
 		if inRound then
-			detailLabel.TextColor3 = COLOR_ACCENT
+			detailLabel.TextColor3 = COLORS.Accent
 			detailLabel.Text = `Deine Punkte: {points}`
 		else
 			detailLabel.Text = "Zuschauer – du bist in der nächsten Runde dabei"
 		end
 	elseif state == STATES.RoundEnd then
 		local reward = player:GetAttribute(RoundConfig.ATTR_REWARD) or 0
-		titleLabel.TextColor3 = COLOR_SUCCESS
+		titleLabel.TextColor3 = COLORS.Success
 		titleLabel.Text = ReplicatedStorage:GetAttribute(RoundConfig.ATTR_MESSAGE) or "Runde vorbei"
 		detailLabel.Text = if reward > 0 then `Deine Punkte: {points}  |  +{reward} Coins` else "Keine Belohnung in dieser Runde"
 	else

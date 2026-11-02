@@ -3,6 +3,10 @@
 -- Das Attribut "Interaction" ("Einkaufen" oder "Tanken") bestimmt die Logik.
 
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Log = require(ReplicatedStorage:WaitForChild("Log"))
+local log = Log.new("Tankstelle")
 
 local PROMPT_TAG = "GasStationPrompt"
 local REFUEL_SECONDS = 3
@@ -40,7 +44,7 @@ local function onRefuel(prompt: ProximityPrompt, player: Player)
 		return
 	end
 	prompt.Enabled = false
-	print(`[Tankstelle] {player.Name} tankt an {pump.Name}`)
+	log.debug(`{player.Name} tankt an {pump.Name}`)
 	flashParts(getPumpDisplays(pump), ACTIVE_COLOR, REFUEL_SECONDS)
 	player:SetAttribute("Tankvorgaenge", (player:GetAttribute("Tankvorgaenge") or 0) + 1)
 	prompt.Enabled = true
@@ -50,7 +54,7 @@ local function onCheckout(prompt: ProximityPrompt, player: Player)
 	local counter = prompt:FindFirstAncestorWhichIsA("Model")
 	local display = counter and counter:FindFirstChild("KassenDisplay")
 	prompt.Enabled = false
-	print(`[Tankstelle] {player.Name} kauft im Shop ein`)
+	log.debug(`{player.Name} kauft im Shop ein`)
 	player:SetAttribute("Einkaeufe", (player:GetAttribute("Einkaeufe") or 0) + 1)
 	if display and display:IsA("BasePart") then
 		flashParts({ display }, ACTIVE_COLOR, CHECKOUT_SECONDS)
@@ -69,7 +73,7 @@ local function bindPrompt(prompt: Instance)
 	end
 	local handler = HANDLERS[prompt:GetAttribute("Interaction")]
 	if not handler then
-		warn(`[Tankstelle] Unbekannte Interaktion an {prompt:GetFullName()}`)
+		log.warn(`Unbekannte Interaktion an {prompt:GetFullName()}`)
 		return
 	end
 	prompt.Triggered:Connect(function(player)

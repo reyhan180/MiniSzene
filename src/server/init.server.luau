@@ -1,2 +1,3 @@
-task.wait(2)
-print("[Server] MiniSzene Server-Skript erfolgreich geladen!") 
+-- Container-Skript für src/server (Rojo: init.server.luau).
+-- Die Server-Systeme liegen als Kinder daneben (PlayerData, ShopService, RoundService,
+-- ReleaseCheck, GasStationInteractions und die Module). Absichtlich ohne eigene Logik.

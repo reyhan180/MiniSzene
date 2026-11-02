@@ -11,6 +11,11 @@
 -- Neue Systeme, die während einer Runde Objekte erzeugen, rufen MapCleanup.registerSpawned(obj) auf.
 
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Log = require(ReplicatedStorage:WaitForChild("Log"))
+
+local log = Log.new("Cleanup")
 
 local MapCleanup = {}
 
@@ -131,8 +136,8 @@ function MapCleanup.cleanup(): CleanupStats
 		end
 	end
 
-	print(
-		`[Cleanup] {stats.removedObjects} Objekte entfernt, {stats.promptsReset} Prompts und {stats.displaysReset} Displays zurückgesetzt`
+	log.debug(
+		`{stats.removedObjects} Objekte entfernt, {stats.promptsReset} Prompts und {stats.displaysReset} Displays zurückgesetzt`
 	)
 	return stats
 end

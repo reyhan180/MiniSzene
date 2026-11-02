@@ -109,3 +109,4 @@ Keine Fehler aus den neuen Skripten in der Konsole. (`rbxassetid://203785492 …
 
 **Nachtrag 02.11.2026:** 2-Spieler-Test auf lokalem Server vom User manuell durchgeführt. Runden-System, Coins-Verteilung und UI-Anzeigen funktionieren im Multiplayer.
 - Map-Cleanup, Status-Broadcasts & Analytics (Praxisprojekt 03): `docs/architecture/analytics_and_cleanup.md`.
+- Release Candidate, Mobile & Polish (Praxisprojekt 04): `docs/release/release_candidate.md`. Projektübersicht: `docs/README.md`.

@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local RoundConfig = require(ReplicatedStorage:WaitForChild("RoundConfig"))
+local UITheme = require(ReplicatedStorage:WaitForChild("UITheme"))
 local announcement = ReplicatedStorage:WaitForChild(RoundConfig.ANNOUNCEMENT_EVENT) :: RemoteEvent
 
 local player = Players.LocalPlayer
@@ -21,10 +22,10 @@ local MAX_DURATION = 10
 
 -- Akzentfarbe je Phase
 local PHASE_COLORS = {
-	[PHASES.Lobby] = Color3.fromRGB(110, 170, 255),
-	[PHASES.Countdown] = Color3.fromRGB(255, 200, 70),
-	[PHASES.InGame] = Color3.fromRGB(90, 220, 120),
-	[PHASES.RoundEnd] = Color3.fromRGB(255, 215, 90),
+	[PHASES.Lobby] = UITheme.COLORS.Lobby,
+	[PHASES.Countdown] = UITheme.COLORS.Accent,
+	[PHASES.InGame] = UITheme.COLORS.Success,
+	[PHASES.RoundEnd] = UITheme.COLORS.Gold,
 }
 -- Kurzer Phasen-Name über dem Titel
 local PHASE_LABELS = {
@@ -61,10 +62,10 @@ local function makeLabel(name: string, posY: number, sizeY: number, font: Enum.F
 	label.BackgroundTransparency = 1
 	label.Font = font
 	label.TextScaled = true
-	label.TextColor3 = Color3.new(1, 1, 1)
+	label.TextColor3 = UITheme.COLORS.Text
 	label.TextTransparency = 1
 	label.TextStrokeTransparency = 1
-	label.TextStrokeColor3 = Color3.new(0, 0, 0)
+	label.TextStrokeColor3 = UITheme.COLORS.Stroke
 	label.Parent = overlay
 	local constraint = Instance.new("UITextSizeConstraint")
 	constraint.MaxTextSize = maxTextSize
@@ -72,9 +73,9 @@ local function makeLabel(name: string, posY: number, sizeY: number, font: Enum.F
 	return label
 end
 
-local phaseLabel = makeLabel("PhaseLabel", 0.36, 0.05, Enum.Font.GothamBold, 26)
-local titleLabel = makeLabel("TitleLabel", 0.47, 0.16, Enum.Font.GothamBlack, 110)
-local subtitleLabel = makeLabel("SubtitleLabel", 0.58, 0.05, Enum.Font.GothamMedium, 30)
+local phaseLabel = makeLabel("PhaseLabel", 0.36, 0.05, UITheme.FONTS.Bold, 26)
+local titleLabel = makeLabel("TitleLabel", 0.47, 0.16, UITheme.FONTS.Heavy, 110)
+local subtitleLabel = makeLabel("SubtitleLabel", 0.58, 0.05, UITheme.FONTS.Regular, 30)
 
 screenGui.Parent = playerGui
 
@@ -100,7 +101,7 @@ local function show(phase: string, title: string, subtitle: string, duration: nu
 	local token = showToken
 	duration = math.clamp(duration, 0.5, MAX_DURATION)
 
-	local color = PHASE_COLORS[phase] or Color3.new(1, 1, 1)
+	local color = PHASE_COLORS[phase] or UITheme.COLORS.Text
 	phaseLabel.Text = PHASE_LABELS[phase] or phase
 	phaseLabel.TextColor3 = color
 	titleLabel.Text = title

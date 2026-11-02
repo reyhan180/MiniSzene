@@ -14,6 +14,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
+local Log = require(ReplicatedStorage:WaitForChild("Log"))
+
+local log = Log.new("PlayerData")
 
 local DATA_STORE_NAME = "PlayerData_v1"
 local AUTOSAVE_INTERVAL = 60
@@ -35,7 +38,7 @@ do
 	if ok then
 		dataStore = result
 	else
-		warn(`[PlayerData] DataStore nicht verfügbar, Daten werden nicht gespeichert: {result}`)
+		log.warn(`DataStore nicht verfügbar, Daten werden nicht gespeichert: {result}`)
 	end
 end
 
@@ -55,7 +58,7 @@ local function withRetries<T>(label: string, callback: () -> T): (boolean, T | s
 			return true, result
 		end
 		lastError = result
-		warn(`[PlayerData] {label} fehlgeschlagen (Versuch {attempt}/{MAX_RETRIES}): {result}`)
+		log.warn(`{label} fehlgeschlagen (Versuch {attempt}/{MAX_RETRIES}): {result}`)
 		if attempt < MAX_RETRIES then
 			task.wait(RETRY_DELAY)
 		end
@@ -94,7 +97,7 @@ local function savePlayer(player: Player)
 		end)
 	end)
 	if ok then
-		print(`[PlayerData] {player.Name} gespeichert (Coins: {data.Coins})`)
+		log.debug(`{player.Name} gespeichert (Coins: {data.Coins})`)
 	end
 end
 
@@ -140,11 +143,11 @@ local function loadPlayer(player: Player)
 	sessionData[player] = data
 	canSave[player] = loaded
 	if not loaded then
-		warn(`[PlayerData] {player.Name}: Laden fehlgeschlagen, Sitzung läuft mit Startwerten ohne Speichern.`)
+		log.warn(`{player.Name}: Laden fehlgeschlagen, Sitzung läuft mit Startwerten ohne Speichern.`)
 	end
 	createValueObjects(player, data)
 	player:SetAttribute("DataLoaded", true)
-	print(`[PlayerData] {player.Name} geladen (Coins: {data.Coins}, neu: {raw == nil})`)
+	log.info(`{player.Name} geladen (Coins: {data.Coins}, neu: {raw == nil})`)
 end
 
 local function onPlayerRemoving(player: Player)

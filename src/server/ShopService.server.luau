@@ -7,9 +7,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
+local Log = require(ReplicatedStorage:WaitForChild("Log"))
 local PlayerDataService = require(script.Parent:WaitForChild("PlayerDataService"))
 
 local PURCHASE_COOLDOWN = 0.5
+local log = Log.new("Shop")
 
 -- Fallback, falls das RemoteEvent nicht über Rojo (BuyItem.model.json) angelegt wurde.
 local buyItemEvent = ReplicatedStorage:FindFirstChild(ShopConfig.BUY_ITEM_EVENT) :: RemoteEvent?
@@ -26,7 +28,7 @@ local lastPurchase: { [Player]: number } = {}
 local function reply(player: Player, success: boolean, itemId: string?, message: string)
 	buyItem:FireClient(player, success, itemId, message)
 	local prefix = if success then "Kauf" else "Kauf abgelehnt"
-	print(`[Shop] {prefix}: {player.Name} -> {itemId or "?"} ({message})`)
+	log.info(`{prefix}: {player.Name} -> {itemId or "?"} ({message})`)
 end
 
 local function onBuyItem(player: Player, itemId: unknown)
