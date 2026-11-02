@@ -108,3 +108,5 @@ Keine Skriptfehler in der Konsole.
 - Der Schutz vor ungültigen Übergängen ist im Code vorhanden, wurde im normalen Ablauf aber nie ausgelöst.
 
 **Nachtrag 02.11.2026:** 2-Spieler-Test auf lokalem Server vom User manuell durchgeführt. Runden-System, Coins-Verteilung und UI-Anzeigen funktionieren im Multiplayer.
+
+**Erweiterung (Praxisprojekt 03):** Map-Cleanup nach Rundenende, bildschirmfüllende Phasen-Ankündigungen und Analytics-Logging, siehe `analytics_and_cleanup.md`.

@@ -108,3 +108,4 @@ Keine Fehler aus den neuen Skripten in der Konsole. (`rbxassetid://203785492 …
 - Runden-System (Game Loop & State Machine): `docs/architecture/round_system.md`. Vergibt Coins am Rundenende über `PlayerDataService.addCoins`.
 
 **Nachtrag 02.11.2026:** 2-Spieler-Test auf lokalem Server vom User manuell durchgeführt. Runden-System, Coins-Verteilung und UI-Anzeigen funktionieren im Multiplayer.
+- Map-Cleanup, Status-Broadcasts & Analytics (Praxisprojekt 03): `docs/architecture/analytics_and_cleanup.md`.

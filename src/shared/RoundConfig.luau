@@ -50,6 +50,17 @@ RoundConfig.ATTR_IN_ROUND = "InRound" -- boolean, aktiver Teilnehmer
 RoundConfig.ATTR_POINTS = "RoundPoints" -- number, Punkte der aktuellen Runde
 RoundConfig.ATTR_REWARD = "RoundReward" -- number, Coins der letzten Runde
 
+-- Globale Ankündigungen (Server -> alle Clients)
+-- RoundAnnouncement:FireAllClients(phase, title, subtitle, duration)
+RoundConfig.ANNOUNCEMENT_EVENT = "RoundAnnouncement"
+RoundConfig.PHASES = {
+	Lobby = "Lobby", -- Waiting / Intermission / Abbruch
+	Countdown = "Countdown", -- Countdown-Zahlen
+	InGame = "InGame", -- Rundenstart, Restzeit-Warnung
+	RoundEnd = "RoundEnd", -- Siegesnachricht
+}
+RoundConfig.WARNING_SECONDS = 10 -- Ankündigung "Noch 10 Sekunden!"
+
 -- Startpunkte in Workspace (in Studio angelegt, unsichtbare Parts)
 RoundConfig.ARENA_SPAWNS_PATH = { "GamePlay", "RoundSpawns" }
 RoundConfig.LOBBY_SPAWNS_PATH = { "GamePlay", "LobbySpawns" }
